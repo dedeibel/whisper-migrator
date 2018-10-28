@@ -30,9 +30,9 @@ func usage() {
 
 		OR
 
-		migration.go -option=ClientV2 -wspPath=whisper folder
-		-from=<2015-11-01> -until=<2015-12-30> -dbname=migrated -host=http://localhost
-		-port=8086, -retentionPolicy=default -tagconfig=config.json -username=<username>,
+		migration.go -option=ClientV2 -wspPath=whisper folder \
+		-from=<2015-11-01> -until=<2015-12-30> -dbname=migrated -host=http://localhost \
+		-port=8086 -retentionPolicy=default -tagconfig=config.json -username=<username>
 		-password=<password>`)
 }
 
@@ -43,21 +43,22 @@ type ShardInfo struct {
 }
 
 type MigrationData struct {
-	option          string
-	influxDataDir   string
-	from            time.Time
-	until           time.Time
-	dbName          string
-	wspFiles        []string
-	shards          []ShardInfo
-	tagConfigs      []TagConfig
-	whisperFileSize int64
-	tsmFileSize     int64
-	retentionPolicy string
-	host            string
-	port            string
-	username        string
-	password        string
+	option             string
+	influxDataDir      string
+	from               time.Time
+	until              time.Time
+	dbName             string
+	wspFiles           []string
+	shards             []ShardInfo
+	tagConfigs         []TagConfig
+	whisperFileSize    int64
+	tsmFileSize        int64
+	retentionPolicy    string
+	host               string
+	port               string
+	username           string
+	password           string
+	InsecureSkipVerify bool
 }
 
 type TsmPoint struct {
@@ -85,19 +86,20 @@ type MTF struct {
 
 func main() {
 	var (
-		option          = flag.String("option", "NULL", "Use TSMWriter or ClientV2 for migration")
-		wspPath         = flag.String("wspPath", "NULL", "Whisper files folder path")
-		influxDataDir   = flag.String("influxDataDir", "NULL", "InfluxDB data directory")
-		from            = flag.String("from", "NULL", "from date in YYYY-MM-DD format")
-		until           = flag.String("until", "NULL", "until date in YYYY-MM-DD format")
-		dbName          = flag.String("dbname", "migrated", "Database name (default: migrated")
-		tagConfigFile   = flag.String("tagconfig", "NULL", "Configuration file for measurement and tags")
-		retentionPolicy = flag.String("retentionPolicy", "default", "Retention Policy")
-		host            = flag.String("host", "http://localhost", "Host name where influxdb is running")
-		port            = flag.String("port", "8086", "Port on which influxdb is running")
-		username        = flag.String("username", "NULL", "Username for influxdb auth")
-		password        = flag.String("password", "NULL", "Password for influxdb auth")
-		wspinfo         = flag.Bool("wspinfo", false, "Whisper file information")
+		option             = flag.String("option", "NULL", "Use TSMWriter or ClientV2 for migration")
+		wspPath            = flag.String("wspPath", "NULL", "Whisper files folder path")
+		influxDataDir      = flag.String("influxDataDir", "NULL", "InfluxDB data directory")
+		from               = flag.String("from", "NULL", "from date in YYYY-MM-DD format")
+		until              = flag.String("until", "NULL", "until date in YYYY-MM-DD format")
+		dbName             = flag.String("dbname", "migrated", "Database name (default: migrated")
+		tagConfigFile      = flag.String("tagconfig", "NULL", "Configuration file for measurement and tags")
+		retentionPolicy    = flag.String("retentionPolicy", "default", "Retention Policy")
+		host               = flag.String("host", "http://localhost", "Host name where influxdb is running")
+		port               = flag.String("port", "8086", "Port on which influxdb is running")
+		username           = flag.String("username", "NULL", "Username for influxdb auth")
+		password           = flag.String("password", "NULL", "Password for influxdb auth")
+		InsecureSkipVerify = flag.Bool("InsecureSkipVerify", false, "Skip SSL verification")
+		wspinfo            = flag.Bool("wspinfo", false, "Whisper file information")
 	)
 	flag.Parse()
 
@@ -131,14 +133,15 @@ func main() {
 	}
 
 	migrationData := &MigrationData{
-		option:          *option,
-		dbName:          *dbName,
-		influxDataDir:   *influxDataDir,
-		retentionPolicy: *retentionPolicy,
-		host:            *host,
-		port:            *port,
-		username:        *username,
-		password:        *password,
+		option:             *option,
+		dbName:             *dbName,
+		influxDataDir:      *influxDataDir,
+		retentionPolicy:    *retentionPolicy,
+		host:               *host,
+		port:               *port,
+		username:           *username,
+		password:           *password,
+		InsecureSkipVerify: *InsecureSkipVerify,
 	}
 
 	var err error
@@ -339,7 +342,8 @@ func (migrationData *MigrationData) PreviewMTF() {
 
 func (migrationData *MigrationData) CreateShards() error {
 	c, _ := client.NewHTTPClient(client.HTTPConfig{
-		Addr: migrationData.host + ":" + migrationData.port,
+		Addr:               migrationData.host + ":" + migrationData.port,
+		InsecureSkipVerify: migrationData.InsecureSkipVerify,
 	})
 	defer c.Close()
 

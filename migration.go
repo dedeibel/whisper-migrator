@@ -4,9 +4,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/influxdata/influxdb/client/v2"
-	"github.com/influxdata/influxdb/tsdb/engine/tsm1"
-	"github.com/uttamgandhi24/whisper-go/whisper"
 	"io/ioutil"
 	"log"
 	"os"
@@ -14,6 +11,10 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/influxdata/influxdb/client/v2"
+	"github.com/influxdata/influxdb/tsdb/engine/tsm1"
+	"github.com/uttamgandhi24/whisper-go/whisper"
 )
 
 func usage() {
@@ -60,7 +61,7 @@ type MigrationData struct {
 }
 
 type TsmPoint struct {
-	key    string
+	key    []byte
 	values []tsm1.Value
 }
 
@@ -550,7 +551,7 @@ func (migrationData *MigrationData) WriteTSMPoints(filename string,
 }
 
 //Create TSM Key from measurement, tags and field
-func CreateTSMKey(mtf *MTF) string {
+func CreateTSMKey(mtf *MTF) []byte {
 	key := mtf.Measurement
 	if len(mtf.Tags) > 0 {
 		for _, tagKeyValue := range mtf.Tags {
@@ -558,7 +559,7 @@ func CreateTSMKey(mtf *MTF) string {
 			key = key + tagKeyValue.Tagkey + "=" + tagKeyValue.Tagvalue
 		}
 	}
-	return key + "#!~#" + mtf.Field
+	return []byte(key + "#!~#" + mtf.Field)
 }
 
 // Get measurement, tags and field by matching the whisper filename with a

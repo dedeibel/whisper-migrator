@@ -59,6 +59,7 @@ type MigrationData struct {
 	username           string
 	password           string
 	insecureSkipVerify bool
+	debug              bool
 }
 
 type TsmPoint struct {
@@ -100,10 +101,9 @@ func main() {
 		password           = flag.String("password", "NULL", "Password for influxdb auth")
 		insecureSkipVerify = flag.Bool("insecureSkipVerify", false, "Skip SSL verification")
 		wspinfo            = flag.Bool("wspinfo", false, "Whisper file information")
+		debug              = flag.Bool("debug", false, "debug")
 	)
 	flag.Parse()
-
-	fmt.Println("No Whisper files found")
 
 	//Handle whisper information menu
 	if *wspinfo == true {
@@ -144,6 +144,7 @@ func main() {
 		username:           *username,
 		password:           *password,
 		insecureSkipVerify: *insecureSkipVerify,
+		debug:              *debug,
 	}
 
 	var err error
@@ -293,7 +294,10 @@ func NewConfig(wspFile string) *TagConfig {
 func (migrationData *MigrationData) FindWhisperFiles(searchDir string) {
 
 	fileList := []string{}
-	err := filepath.Walk(searchDir, func(path string, f os.FileInfo, err error) error {
+
+	wspDir, _ := filepath.Abs(searchDir)
+
+	err := filepath.Walk(wspDir, func(path string, f os.FileInfo, err error) error {
 		if os.IsNotExist(err) { //search dir does not exist
 			return nil
 		}
@@ -571,11 +575,17 @@ func CreateTSMKey(mtf *MTF) []byte {
 // Get measurement, tags and field by matching the whisper filename with a
 // pattern in the config file
 func (migrationData *MigrationData) GetMTF(wspFilename string) *MTF {
-
+	curWorkingDir, _ := os.Getwd()
+	wspFilename = strings.Replace(wspFilename, curWorkingDir+"/", "", -1)
 	wspFilename = strings.TrimSuffix(wspFilename, ".wsp")
 	wspFilename = strings.Replace(wspFilename, "/", ".", -1)
 	wspFilename = strings.Replace(wspFilename, ",", "_", -1)
 	wspFilename = strings.Replace(wspFilename, " ", "_", -1)
+
+	if migrationData.debug == true {
+		fmt.Printf("%+v\n", curWorkingDir)
+		fmt.Printf("%+v\n", wspFilename)
+	}
 
 	var patternStr []string
 	var matches [][]int
@@ -622,8 +632,15 @@ func (migrationData *MigrationData) GetMTF(wspFilename string) *MTF {
 		}
 	}
 	// Assign the last string as measurement
-	mtf.Measurement = remArr[len(remArr)-1]
-	mtf.Field = tagConfig.Field
+	mtf.Measurement = tagConfig.Measurement
+	mtf.Field = remArr[len(remArr)-1]
+
+	if migrationData.debug == true {
+		fmt.Printf("%+v\n", remArr)
+		fmt.Printf("%+v\n", patternStr)
+		fmt.Printf("%+v\n", mtf)
+	}
+
 	return &mtf
 }
 

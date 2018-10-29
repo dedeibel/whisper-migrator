@@ -33,7 +33,7 @@ func usage() {
 		migration.go -option=ClientV2 -wspPath=whisper folder \
 		-from=<2015-11-01> -until=<2015-12-30> -dbname=migrated -host=http://localhost \
 		-port=8086 -retentionPolicy=default -tagconfig=config.json -username=<username>
-		-password=<password>`)
+		-password=<password> -insecureSkipVerify`)
 }
 
 type ShardInfo struct {
@@ -58,7 +58,7 @@ type MigrationData struct {
 	port               string
 	username           string
 	password           string
-	InsecureSkipVerify bool
+	insecureSkipVerify bool
 }
 
 type TsmPoint struct {
@@ -98,10 +98,12 @@ func main() {
 		port               = flag.String("port", "8086", "Port on which influxdb is running")
 		username           = flag.String("username", "NULL", "Username for influxdb auth")
 		password           = flag.String("password", "NULL", "Password for influxdb auth")
-		InsecureSkipVerify = flag.Bool("InsecureSkipVerify", false, "Skip SSL verification")
+		insecureSkipVerify = flag.Bool("insecureSkipVerify", false, "Skip SSL verification")
 		wspinfo            = flag.Bool("wspinfo", false, "Whisper file information")
 	)
 	flag.Parse()
+
+	fmt.Println("No Whisper files found")
 
 	//Handle whisper information menu
 	if *wspinfo == true {
@@ -141,7 +143,7 @@ func main() {
 		port:               *port,
 		username:           *username,
 		password:           *password,
-		InsecureSkipVerify: *InsecureSkipVerify,
+		insecureSkipVerify: *insecureSkipVerify,
 	}
 
 	var err error
@@ -343,7 +345,7 @@ func (migrationData *MigrationData) PreviewMTF() {
 func (migrationData *MigrationData) CreateShards() error {
 	c, _ := client.NewHTTPClient(client.HTTPConfig{
 		Addr:               migrationData.host + ":" + migrationData.port,
-		InsecureSkipVerify: migrationData.InsecureSkipVerify,
+		InsecureSkipVerify: migrationData.insecureSkipVerify,
 	})
 	defer c.Close()
 
@@ -648,9 +650,10 @@ func (migrationData *MigrationData) WriteUsingV2() {
 	from := migrationData.from
 	until := migrationData.until
 	c, _ := client.NewHTTPClient(client.HTTPConfig{
-		Addr:     migrationData.host + ":" + migrationData.port,
-		Username: migrationData.username,
-		Password: migrationData.password,
+		Addr:               migrationData.host + ":" + migrationData.port,
+		Username:           migrationData.username,
+		Password:           migrationData.password,
+		InsecureSkipVerify: migrationData.insecureSkipVerify,
 	})
 	defer c.Close()
 

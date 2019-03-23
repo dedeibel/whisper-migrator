@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/influxdata/influxdb/client/v2"
-	"github.com/influxdata/influxdb/tsdb/engine/tsm1"
+	"github.com/influxdata/influxdb/tsdb/tsm1"
+	"github.com/influxdata/influxdb1-client/v2"
 	"github.com/uttamgandhi24/whisper-go/whisper"
 )
 

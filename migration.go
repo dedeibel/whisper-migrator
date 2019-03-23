@@ -602,7 +602,11 @@ func (migrationData *MigrationData) GetMTF(wspFilename string) *MTF {
 
 		// List the matching values (Base and groups)
 		re := regexp.MustCompile(pattern)
-		matched = re.FindAllStringSubmatch(wspFilename, -1)[0]
+		ret := re.FindAllStringSubmatch(wspFilename, -1)
+		if len(ret) == 0 {
+			continue
+		}
+		matched = ret[0]
 
 		if matched != nil {
 			filenameMatched = true
